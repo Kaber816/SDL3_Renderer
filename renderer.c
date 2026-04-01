@@ -17,6 +17,7 @@
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 800;
 const int POINT_SIZE = 10;
+const int FOCAL_LENGTH = 90;
 
 struct point3d {
     float x;
@@ -32,7 +33,8 @@ struct point3d points[] = {
     {-0.25, -0.25, -0.25},
     {-0.25, 0.25, -0.25},
     {0.25, -0.25, -0.25},
-    {0.25, 0.25, -0.25}
+    {0.25, 0.25, -0.25},
+    {-0.5, 0.5, -20}
 };
 
 /*
@@ -44,7 +46,7 @@ struct point3d points[] = {
 
 struct SDL_FPoint Point_3d_To_Screenspace(struct point3d *point);
 
-void Rotate_Matrix(struct point3d *points, size_t count, float angle);
+void Rotate_Points(struct point3d *points, size_t count, float angle);
 
 int main() {
 
@@ -62,7 +64,6 @@ int main() {
     // Loop variables
     SDL_Event event;
     int isQuitTrue = 0;
-    float rotation_angle = 0.0f;
     int points_count = sizeof(points) / sizeof(struct point3d);
 
     // Main loop
@@ -81,10 +82,10 @@ int main() {
         SDL_RenderClear(renderer);
     
         // Set draw color to white for pixels
-        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         
         // Rotate points
-        Rotate_Matrix(points, points_count, rotation_angle);
+        //Rotate_Points(points, points_count, 0.01);
 
         SDL_FPoint SDL_Points[points_count];
         // Make array for SDL style points
@@ -108,15 +109,7 @@ int main() {
         //SDL_RenderLines(renderer, SDL_Points, sizeof(SDL_Points) / sizeof(SDL_FPoint));
         SDL_RenderPresent(renderer); 
 
-        rotation_angle += 0.001f;
 
-        if (rotation_angle > 359.0f) {
-            rotation_angle = 0.0f;
-        }
-
-        if (rotation_angle < -359.0f) {
-            rotation_angle = 0.0f;
-        }
     }
 
     // Destroy SDL stuff and free memory
@@ -128,8 +121,8 @@ int main() {
 
 struct SDL_FPoint Point_3d_To_Screenspace(struct point3d *point) {
 
-    float x = point->x / point->z;
-    float y = point->y / point->z;
+    float x = (point->x * FOCAL_LENGTH) / point->z;
+    float y = (point->y * FOCAL_LENGTH) / point->z;
     
     x = (point->x + 1) / 2 * SCREEN_WIDTH;
     y = (1 - (point->y + 1)/2) * SCREEN_HEIGHT;
@@ -139,7 +132,7 @@ struct SDL_FPoint Point_3d_To_Screenspace(struct point3d *point) {
     return point_prime;
 }
 
-void Rotate_Matrix(struct point3d *points, size_t count, float angle) {
+void Rotate_Points(struct point3d *points, size_t count, float angle) {
     
     float r = angle * (M_PI / 180.0f);
 
@@ -150,7 +143,7 @@ void Rotate_Matrix(struct point3d *points, size_t count, float angle) {
         float x = points[p].x;
         float y = points[p].y;
 
-        points[p].x = x * c - y * s; 
-        points[p].y = x * s + y * c; 
+        points[p].x = (x * c) - (y * s); 
+        points[p].y = (x * s) + (y * c); 
     }
 }
