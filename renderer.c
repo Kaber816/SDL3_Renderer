@@ -75,6 +75,16 @@ int main() {
                 printf("QUIT DETECTED\n");
                 break;
             }
+
+            if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+                if (event.wheel.y > 0) {
+                    distance -= 0.1;
+                }
+
+                if (event.wheel.y < 0) {
+                    distance += 0.1;
+                }
+            }
         }
         
         // Set background to black
@@ -107,7 +117,7 @@ int main() {
         SDL_RenderFillRects(renderer, rects, points_count);
 
         // Create lines
-        //SDL_RenderLines(renderer, SDL_Points, sizeof(SDL_Points) / sizeof(SDL_FPoint));
+        SDL_RenderLines(renderer, SDL_Points, sizeof(SDL_Points) / sizeof(SDL_FPoint));
         SDL_RenderPresent(renderer); 
 
 
@@ -122,10 +132,10 @@ int main() {
 
 struct SDL_FPoint Point_3d_To_Screenspace(struct point3d *point) {
 
-    float z = point->z + distance;  // prevent divide by zero
+    float z = 1 / (point->z + distance);  // prevent divide by zero and also minimize division
 
-    float x = (point->x * FOCAL_LENGTH) / z;
-    float y = (point->y * FOCAL_LENGTH) / z;
+    float x = (point->x * FOCAL_LENGTH) * z;
+    float y = (point->y * FOCAL_LENGTH) * z;
 
     // center on screen
     x += SCREEN_WIDTH / 2.0f;
@@ -135,7 +145,7 @@ struct SDL_FPoint Point_3d_To_Screenspace(struct point3d *point) {
 }
 
 void Rotate_Points(struct point3d *points, size_t count, float angle) {
-    
+
     float r = angle * (M_PI / 180.0f);
 
     float c = cos(r);
