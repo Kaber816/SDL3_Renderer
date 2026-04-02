@@ -99,7 +99,7 @@ int main() {
                 }
             }
 
-            // Enable mouse click and draw to rotate
+            // Enable infinite mouse movement on right click, undo when released
             if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
                 
                 if (event.button.button == SDL_BUTTON_RIGHT) {
@@ -117,7 +117,8 @@ int main() {
                     right_click = false;
                 }
             }
-
+            
+            // Enable object rotation with mouse
             if (event.type == SDL_EVENT_MOUSE_MOTION && right_click) {
                 Rotate_Points_X_Axis(points, points_count, -event.motion.yrel);
                 Rotate_Points_Y_Axis(points, points_count, -event.motion.xrel);
@@ -151,11 +152,10 @@ int main() {
             rects[i] = curr_rect;
         }
 
-       // Render rects
-       SDL_RenderFillRects(renderer, rects, points_count);
+        // Render rects
+        SDL_RenderFillRects(renderer, rects, points_count);
 
-       // Create lines
-        
+        // Create lines
         struct edge edges[] = {
             {SDL_Points[0], SDL_Points[1]},
             {SDL_Points[1], SDL_Points[3]},
