@@ -25,6 +25,11 @@ struct point3d {
     float z;
 };
 
+struct edge {
+    SDL_FPoint point1;
+    SDL_FPoint point2;
+};
+
 struct point3d points[] = {
     {-0.25, -0.25, 0.25},
     {-0.25, 0.25, 0.25},
@@ -96,7 +101,7 @@ int main() {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         
         // Rotate points
-        Rotate_Points_X_Axis(points, points_count, 0.01);
+        //Rotate_Points_X_Axis(points, points_count, 0.01);
         Rotate_Points_Y_Axis(points, points_count, 0.01);
 
         SDL_FPoint SDL_Points[points_count];
@@ -106,20 +111,43 @@ int main() {
             SDL_Points[i] = curr_point;
         }
 
-        SDL_FRect rects[points_count];
-        // Go through SDL_FPoint and make lists
-        for (int i = 0; i < points_count; i++) {
-            SDL_FPoint curr_point = SDL_Points[i];
-            float point_size = POINT_SIZE / (points[i].z + distance);
-            struct SDL_FRect curr_rect = {curr_point.x - (point_size / 2.0), curr_point.y - (point_size / 2.0), point_size, point_size};
-            rects[i] = curr_rect;
-        }
+       // SDL_FRect rects[points_count];
+       // // Go through SDL_FPoint and make lists
+       // for (int i = 0; i < points_count; i++) {
+       //     SDL_FPoint curr_point = SDL_Points[i];
+       //     float point_size = POINT_SIZE / (points[i].z + distance);
+       //     struct SDL_FRect curr_rect = {curr_point.x - (point_size / 2.0), curr_point.y - (point_size / 2.0), point_size, point_size};
+       //     rects[i] = curr_rect;
+       // }
 
         // Render rects
-        SDL_RenderFillRects(renderer, rects, points_count);
+        //SDL_RenderFillRects(renderer, rects, points_count);
 
         // Create lines
-        SDL_RenderLines(renderer, SDL_Points, sizeof(SDL_Points) / sizeof(SDL_FPoint));
+        //SDL_RenderLines(renderer, SDL_Points, sizeof(SDL_Points) / sizeof(SDL_FPoint));
+        
+        struct edge edges[] = {
+            {SDL_Points[0], SDL_Points[1]},
+            {SDL_Points[1], SDL_Points[3]},
+            {SDL_Points[3], SDL_Points[2]},
+            {SDL_Points[2], SDL_Points[0]},
+
+            {SDL_Points[4], SDL_Points[5]},
+            {SDL_Points[5], SDL_Points[7]},
+            {SDL_Points[7], SDL_Points[6]},
+            {SDL_Points[6], SDL_Points[4]},
+            
+            {SDL_Points[0], SDL_Points[4]},
+            {SDL_Points[1], SDL_Points[5]},
+            {SDL_Points[2], SDL_Points[6]},
+            {SDL_Points[3], SDL_Points[7]}
+        };
+        
+        int edges_count = sizeof(edges) / sizeof(struct edge);
+        for (int i = 0; i < edges_count; i++) {
+            SDL_RenderLine(renderer, edges[i].point1.x, edges[i].point1.y, edges[i].point2.x, edges[i].point2.y);    
+        }
+        // Present renderer
         SDL_RenderPresent(renderer); 
 
 
