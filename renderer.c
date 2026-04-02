@@ -16,8 +16,7 @@
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 800;
-const int POINT_SIZE = 10;
-const int FOCAL_LENGTH = 90;
+const int POINT_SIZE = 10; const int FOCAL_LENGTH = 90;
 float distance = 1.0f;
 
 struct point3d {
@@ -31,6 +30,7 @@ struct point3d points[] = {
     {-0.25, 0.25, 0.25},
     {0.25, -0.25, 0.25},
     {0.25, 0.25, 0.25},
+
     {-0.25, -0.25, -0.25},
     {-0.25, 0.25, -0.25},
     {0.25, -0.25, -0.25},
@@ -46,7 +46,8 @@ struct point3d points[] = {
 
 struct SDL_FPoint Point_3d_To_Screenspace(struct point3d *point);
 
-void Rotate_Points(struct point3d *points, size_t count, float angle);
+void Rotate_Points_Y_Axis(struct point3d *points, size_t count, float angle);
+void Rotate_Points_X_Axis(struct point3d *points, size_t count, float angle);
 
 int main() {
 
@@ -95,7 +96,8 @@ int main() {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         
         // Rotate points
-        Rotate_Points(points, points_count, 0.01);
+        Rotate_Points_X_Axis(points, points_count, 0.01);
+        Rotate_Points_Y_Axis(points, points_count, 0.01);
 
         SDL_FPoint SDL_Points[points_count];
         // Make array for SDL style points
@@ -144,7 +146,7 @@ struct SDL_FPoint Point_3d_To_Screenspace(struct point3d *point) {
     return (SDL_FPoint){x, y};
 }
 
-void Rotate_Points(struct point3d *points, size_t count, float angle) {
+void Rotate_Points_Y_Axis(struct point3d *points, size_t count, float angle) {
 
     float r = angle * (M_PI / 180.0f);
 
@@ -153,10 +155,29 @@ void Rotate_Points(struct point3d *points, size_t count, float angle) {
 
     for (int p = 0; p < count; p++) {
         float x = points[p].x;
-        float y = points[p].y;
         float z = points[p].z;
-
+        
+        // Was slightly confused by this at first, looking at coordinate plane from screen point of view,
+        // -Z is towards user, +Z is away, +x is right of the screen, +y is top of the screen
+        // so here we rotate around Y which makes it look like it's rotating left
         points[p].x = (x * c) + (z * s); 
         points[p].z = (-x * s) + (z * c); 
     }
 }
+
+void Rotate_Points_X_Axis(struct point3d *points, size_t count, float angle) {
+
+    float r = angle * (M_PI / 180.0f);
+
+    float c = cos(r);
+    float s = sin(r);
+
+    for (int p = 0; p < count; p++) {
+        float y = points[p].y;
+        float z = points[p].z;
+        
+        points[p].y = (y * c) + (z * -s); 
+        points[p].z = (y * s) + (z * c); 
+    }
+}
+
