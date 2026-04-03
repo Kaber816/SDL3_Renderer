@@ -57,32 +57,7 @@ struct SDL_FPoint Point_3d_To_Screenspace(struct point3d *point);
 void Rotate_Points_Y_Axis(struct point3d *points, size_t count, float angle);
 void Rotate_Points_X_Axis(struct point3d *points, size_t count, float angle);
 
-int main(int argc, char **argv) {
-
-// ----------------------
-// --- File Processing
-// ----------------------
-
-    // Check arg counts
-    if (argc > 2) {
-        fprintf(stderr, "Too many arguments passed.\n");
-        return 1;
-    } else if (argc < 2) {
-        fprintf(stderr, "Too few arguments.\n");
-        return 1;
-    }
-
-    FILE *obj;
-
-    obj = fopen(argv[1], "r");
-
-    if (obj == NULL) {
-        fprintf(stderr, "Error opening object file\n");
-        return 1;
-    }
-
-    char *buffer;
-    fread(buffer, 50, 1, obj);
+int main() {
 
 // ----------------------
 // --- SDL Initialization

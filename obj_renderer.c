@@ -21,8 +21,9 @@
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 800;
-const int POINT_SIZE = 5; const int FOCAL_LENGTH = 90;
-float distance = 1.0f;
+const int POINT_SIZE = 10;
+const int FOCAL_LENGTH = 90;
+float distance = 10.0f;
 
 struct point3d {
     float x;
@@ -77,55 +78,84 @@ int main(int argc, char **argv) {
 
     char c = fgetc(obj);
     while (c == '#') {
-        printf("%c", c);
+        //printf("%c", c);
         while (c != '\n') {
             c = fgetc(obj);
-            printf("%c", c);
+            //printf("%c", c);
         }
         c = fgetc(obj);
     }
 
     ungetc(c, obj); // Unget the first char
-    char *token;
-
+    char *token = "";
+    long data_start_pos = ftell(obj); // Store the file pointer position of start of data
     int points_count = 0;
+
     while (strcmp(token, "f") != 0) {
         fgets(buffer, 50, obj);
         token = strtok(buffer, " ");
 
-        if(strcmp(token, "v")) {
+        if(strcmp(token, "v") == 0) {
             points_count++;
-            printf("%d\n", points_count);
+            //printf("%d\n", points_count);
         }
     }
-    
-    // Store points in array
+    printf("Vertices: %d\n", points_count);
+
     int x_val;
     int y_val;
     int z_val;
-    int curr_point;
+    int curr_point = 0;
     struct point3d points[points_count];
+    
+    // Move fp back to beginning of data
+    fseek(obj, data_start_pos, SEEK_SET);
 
+    // Store points in array
     while (curr_point < points_count) {
         fgets(buffer, 50, obj);
         token = strtok(buffer, " ");
 
-        if(strcmp(token, "v")) {
+        if(strcmp(token, "v") == 0) {
             // X
             token = strtok(NULL, " ");
-            x_val = atoi(token);
+            x_val = atof(token);
 
             // Y
             token = strtok(NULL, " ");
-            y_val = atoi(token);
+            y_val = atof(token);
 
             // Z
             token = strtok(NULL, " ");
-            z_val = atoi(token);
+            z_val = atof(token);
 
             struct point3d temp = {x_val, y_val, z_val};
             points[curr_point] = temp;
             curr_point++;
+        }
+    }
+
+    // Get edges to draw lines using face values
+    while (c != 'f') {
+        //printf("%c", c);
+        while (c != '\n') {
+            c = fgetc(obj);
+            //printf("%c", c);
+        }
+        c = fgetc(obj);
+    }
+
+    ungetc(c, obj); // Unget the first char, should be at first face value now
+    
+    long faces_start_pos = ftell(obj); // Store the file pointer position of start of data
+    int edges_count = 0;
+    
+    while (*fgets(buffer, 50, obj) != EOF) {
+        token = strtok(buffer, " ");
+
+        if(strcmp(token, "f") == 0) {
+            edges_count++;
+            printf("%d\n", edges_count);
         }
     }
 
@@ -232,7 +262,8 @@ int main(int argc, char **argv) {
         //for (int i = 0; i < edges_count; i++) {
         //    SDL_RenderLine(renderer, edges[i].point1.x, edges[i].point1.y, edges[i].point2.x, edges[i].point2.y);    
         //}
-        
+        //SDL_RenderLines(renderer, SDL_Points, points_count);
+
         // Present renderer
         SDL_RenderPresent(renderer); 
 
