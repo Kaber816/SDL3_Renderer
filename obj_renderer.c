@@ -16,6 +16,8 @@
 #include <inttypes.h>
 #include <math.h>
 #include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 800;
@@ -31,18 +33,6 @@ struct point3d {
 struct edge {
     SDL_FPoint point1;
     SDL_FPoint point2;
-};
-
-struct point3d points[] = {
-    {-0.25, -0.25, 0.25},
-    {-0.25, 0.25, 0.25},
-    {0.25, -0.25, 0.25},
-    {0.25, 0.25, 0.25},
-
-    {-0.25, -0.25, -0.25},
-    {-0.25, 0.25, -0.25},
-    {0.25, -0.25, -0.25},
-    {0.25, 0.25, -0.25}
 };
 
 /*
@@ -63,7 +53,6 @@ int main(int argc, char **argv) {
 // --- File Processing
 // ----------------------
 
-    // Check arg counts
     if (argc > 2) {
         fprintf(stderr, "Too many arguments passed.\n");
         return 1;
@@ -71,18 +60,74 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Too few arguments.\n");
         return 1;
     }
+    
+    FILE *obj; // File to store obj
 
-    FILE *obj;
-
+    // Open obj file
     obj = fopen(argv[1], "r");
 
+    // Return error if file open fails
     if (obj == NULL) {
-        fprintf(stderr, "Error opening object file\n");
-        return 1;
+        fprintf(stderr, "Error opening obj file\n");
+        return 1; 
+    }
+ 
+    char buffer[1024];
+    ssize_t read = 0;
+
+    char c = fgetc(obj);
+    while (c == '#') {
+        printf("%c", c);
+        while (c != '\n') {
+            c = fgetc(obj);
+            printf("%c", c);
+        }
+        c = fgetc(obj);
     }
 
-    char *buffer;
-    fread(buffer, 50, 1, obj);
+    ungetc(c, obj); // Unget the first char
+    char *token;
+
+    int points_count = 0;
+    while (strcmp(token, "f") != 0) {
+        fgets(buffer, 50, obj);
+        token = strtok(buffer, " ");
+
+        if(strcmp(token, "v")) {
+            points_count++;
+            printf("%d\n", points_count);
+        }
+    }
+    
+    // Store points in array
+    int x_val;
+    int y_val;
+    int z_val;
+    int curr_point;
+    struct point3d points[points_count];
+
+    while (curr_point < points_count) {
+        fgets(buffer, 50, obj);
+        token = strtok(buffer, " ");
+
+        if(strcmp(token, "v")) {
+            // X
+            token = strtok(NULL, " ");
+            x_val = atoi(token);
+
+            // Y
+            token = strtok(NULL, " ");
+            y_val = atoi(token);
+
+            // Z
+            token = strtok(NULL, " ");
+            z_val = atoi(token);
+
+            struct point3d temp = {x_val, y_val, z_val};
+            points[curr_point] = temp;
+            curr_point++;
+        }
+    }
 
 // ----------------------
 // --- SDL Initialization
@@ -98,11 +143,13 @@ int main(int argc, char **argv) {
     // Loop variables
     SDL_Event event;
     int isQuitTrue = 0;
-    int points_count = sizeof(points) / sizeof(struct point3d);
+
+    //int points_count = sizeof(points) / sizeof(struct point3d);
     bool right_click = false;
 
     // Main loop
     while (!isQuitTrue) {
+
        // Event handling to close program
         while (SDL_PollEvent(&event)) {
 
@@ -177,31 +224,15 @@ int main(int argc, char **argv) {
             rects[i] = curr_rect;
         }
 
-        // Render rects
+      // Render rects
         SDL_RenderFillRects(renderer, rects, points_count);
 
-        // Create lines
-        struct edge edges[] = {
-            {SDL_Points[0], SDL_Points[1]},
-            {SDL_Points[1], SDL_Points[3]},
-            {SDL_Points[3], SDL_Points[2]},
-            {SDL_Points[2], SDL_Points[0]},
-
-            {SDL_Points[4], SDL_Points[5]},
-            {SDL_Points[5], SDL_Points[7]},
-            {SDL_Points[7], SDL_Points[6]},
-            {SDL_Points[6], SDL_Points[4]},
-            
-            {SDL_Points[0], SDL_Points[4]},
-            {SDL_Points[1], SDL_Points[5]},
-            {SDL_Points[2], SDL_Points[6]},
-            {SDL_Points[3], SDL_Points[7]}
-        };
+        // Create lines 
+        //int edges_count = sizeof(edges) / sizeof(struct edge);
+        //for (int i = 0; i < edges_count; i++) {
+        //    SDL_RenderLine(renderer, edges[i].point1.x, edges[i].point1.y, edges[i].point2.x, edges[i].point2.y);    
+        //}
         
-        int edges_count = sizeof(edges) / sizeof(struct edge);
-        for (int i = 0; i < edges_count; i++) {
-            SDL_RenderLine(renderer, edges[i].point1.x, edges[i].point1.y, edges[i].point2.x, edges[i].point2.y);    
-        }
         // Present renderer
         SDL_RenderPresent(renderer); 
 
@@ -209,6 +240,7 @@ int main(int argc, char **argv) {
     }
 
     // Destroy SDL stuff and free memory
+    fclose(obj);
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
     SDL_Quit();
