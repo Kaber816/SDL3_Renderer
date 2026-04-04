@@ -3,3 +3,4 @@ program: obj_renderer.c
 
 clean:
 	rm -f obj_renderer 
+

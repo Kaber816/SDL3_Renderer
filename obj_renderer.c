@@ -19,11 +19,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 800;
-const int POINT_SIZE = 10;
-const int FOCAL_LENGTH = 90;
-float distance = 10.0f;
+// Struct and function declarations
 
 struct point3d {
     float x;
@@ -31,22 +27,30 @@ struct point3d {
     float z;
 };
 
-struct edge {
+struct face {
     SDL_FPoint point1;
     SDL_FPoint point2;
+    SDL_FPoint point3;
 };
 
-/*
- * x' = x/z
- * y' = y/z
- * 0,0 is at center
- * range of equation is -1 , 1 on both sides
-*/
+struct face_point_indexes {
+    int point1;
+    int point2;
+    int point3;
+};
 
 struct SDL_FPoint Point_3d_To_Screenspace(struct point3d *point);
-
 void Rotate_Points_Y_Axis(struct point3d *points, size_t count, float angle);
 void Rotate_Points_X_Axis(struct point3d *points, size_t count, float angle);
+void Draw_Face(SDL_Renderer *renderer, struct face vertices);
+
+// Global variables
+
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 800;
+const int POINT_SIZE = 10;
+const int FOCAL_LENGTH = 90;
+float distance = 100.0f;
 
 int main(int argc, char **argv) {
 
@@ -102,9 +106,9 @@ int main(int argc, char **argv) {
     }
     printf("Vertices: %d\n", points_count);
 
-    int x_val;
-    int y_val;
-    int z_val;
+    float x_val;
+    float y_val;
+    float z_val;
     int curr_point = 0;
     struct point3d points[points_count];
     
@@ -118,15 +122,15 @@ int main(int argc, char **argv) {
 
         if(strcmp(token, "v") == 0) {
             // X
-            token = strtok(NULL, " ");
+            token = strtok(NULL, " \t");
             x_val = atof(token);
 
             // Y
-            token = strtok(NULL, " ");
+            token = strtok(NULL, " \t");
             y_val = atof(token);
 
             // Z
-            token = strtok(NULL, " ");
+            token = strtok(NULL, " \t");
             z_val = atof(token);
 
             struct point3d temp = {x_val, y_val, z_val};
@@ -148,14 +152,39 @@ int main(int argc, char **argv) {
     ungetc(c, obj); // Unget the first char, should be at first face value now
     
     long faces_start_pos = ftell(obj); // Store the file pointer position of start of data
-    int edges_count = 0;
+    int faces_count = 0;
     
-    while (*fgets(buffer, 50, obj) != EOF) {
+    while (fgets(buffer, 50, obj) != NULL) {
+        token = strtok(buffer, " ");
+        if(strcmp(token, "f") == 0) {
+            faces_count++;
+        }
+    }
+    printf("Faces: %d\n", faces_count);
+
+    fseek(obj, faces_start_pos, SEEK_SET); // Set file pointer back to start of faces
+
+    // Create faces 
+    int v1, v2, v3;
+    struct face_point_indexes faces_indexes[faces_count];
+    int curr_face_index = 0;
+    while (fgets(buffer, 50, obj) != NULL) {
         token = strtok(buffer, " ");
 
         if(strcmp(token, "f") == 0) {
-            edges_count++;
-            printf("%d\n", edges_count);
+
+            token = strtok(NULL, " \t");
+            v1 = atoi(token) - 1;
+
+            token = strtok(NULL, " \t");
+            v2 = atoi(token) - 1; 
+
+            token = strtok(NULL, " \t");
+            v3 = atoi(token) - 1;
+
+            struct face_point_indexes temp = {v1, v2, v3};
+            faces_indexes[curr_face_index] = temp;
+            curr_face_index++;
         }
     }
 
@@ -193,11 +222,11 @@ int main(int argc, char **argv) {
             // Enable scrolling for zoom in and out
             if (event.type == SDL_EVENT_MOUSE_WHEEL) {
                 if (event.wheel.y > 0) {
-                    distance -= 0.1;
+                    distance -= 1;
                 }
 
                 if (event.wheel.y < 0) {
-                    distance += 0.1;
+                    distance += 1;
                 }
             }
 
@@ -254,15 +283,17 @@ int main(int argc, char **argv) {
             rects[i] = curr_rect;
         }
 
-      // Render rects
+        // Render rects
         SDL_RenderFillRects(renderer, rects, points_count);
 
-        // Create lines 
-        //int edges_count = sizeof(edges) / sizeof(struct edge);
-        //for (int i = 0; i < edges_count; i++) {
-        //    SDL_RenderLine(renderer, edges[i].point1.x, edges[i].point1.y, edges[i].point2.x, edges[i].point2.y);    
-        //}
-        //SDL_RenderLines(renderer, SDL_Points, points_count);
+        // Render faces
+        for (int f = 0; f < faces_count; f++) {
+            SDL_FPoint v1 = SDL_Points[faces_indexes[f].point1];
+            SDL_FPoint v2 = SDL_Points[faces_indexes[f].point2];
+            SDL_FPoint v3 = SDL_Points[faces_indexes[f].point3];
+            struct face temp = {v1, v2, v3};
+            Draw_Face(renderer, temp);
+        }
 
         // Present renderer
         SDL_RenderPresent(renderer); 
@@ -327,3 +358,10 @@ void Rotate_Points_X_Axis(struct point3d *points, size_t count, float angle) {
     }
 }
 
+void Draw_Face(SDL_Renderer *renderer, struct face vertices) {
+    
+    SDL_RenderLine(renderer, vertices.point1.x, vertices.point1.y, vertices.point2.x, vertices.point2.y);
+    SDL_RenderLine(renderer, vertices.point2.x, vertices.point2.y, vertices.point3.x, vertices.point3.y);
+    SDL_RenderLine(renderer, vertices.point3.x, vertices.point3.y, vertices.point1.x, vertices.point1.y);
+
+}
