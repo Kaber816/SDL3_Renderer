@@ -7,6 +7,7 @@
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
+#include <SDL3/SDL_scancode.h>
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_video.h>
 #include <SDL3/SDL.h>
@@ -39,18 +40,25 @@ struct face_point_indexes {
     int point3;
 };
 
+struct camera {
+    float x;
+    float y;
+    float z;
+};
+
 struct SDL_FPoint Point_3d_To_Screenspace(struct point3d *point);
 void Rotate_Points_Y_Axis(struct point3d *points, size_t count, float angle);
 void Rotate_Points_X_Axis(struct point3d *points, size_t count, float angle);
 void Draw_Face(SDL_Renderer *renderer, struct face vertices);
+void Move_Camera();
 
 // Global variables
-
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 800;
 const int POINT_SIZE = 10;
 const int FOCAL_LENGTH = 90;
-float distance = 100.0f;
+float distance = 50.0f;
+struct camera cam = {0, 0, 0};
 
 int main(int argc, char **argv) {
 
@@ -82,10 +90,8 @@ int main(int argc, char **argv) {
 
     char c = fgetc(obj);
     while (c == '#') {
-        //printf("%c", c);
         while (c != '\n') {
             c = fgetc(obj);
-            //printf("%c", c);
         }
         c = fgetc(obj);
     }
@@ -93,15 +99,14 @@ int main(int argc, char **argv) {
     ungetc(c, obj); // Unget the first char
     char *token = "";
     long data_start_pos = ftell(obj); // Store the file pointer position of start of data
+                                      
     int points_count = 0;
-
     while (strcmp(token, "f") != 0) {
         fgets(buffer, 50, obj);
         token = strtok(buffer, " ");
 
         if(strcmp(token, "v") == 0) {
             points_count++;
-            //printf("%d\n", points_count);
         }
     }
     printf("Vertices: %d\n", points_count);
@@ -141,10 +146,8 @@ int main(int argc, char **argv) {
 
     // Get edges to draw lines using face values
     while (c != 'f') {
-        //printf("%c", c);
         while (c != '\n') {
             c = fgetc(obj);
-            //printf("%c", c);
         }
         c = fgetc(obj);
     }
@@ -164,10 +167,12 @@ int main(int argc, char **argv) {
 
     fseek(obj, faces_start_pos, SEEK_SET); // Set file pointer back to start of faces
 
-    // Create faces 
-    int v1, v2, v3;
-    struct face_point_indexes faces_indexes[faces_count];
+    // Create array of face indexes so we don't need to read file during rendering loop
+    int v1, v2, v3; // 3 vertices of face
+    struct face_point_indexes faces_indexes[faces_count]; // Array of face indexes, (in obj file stored as 1-indexed)
     int curr_face_index = 0;
+
+    // Face processing loop
     while (fgets(buffer, 50, obj) != NULL) {
         token = strtok(buffer, " ");
 
@@ -188,9 +193,9 @@ int main(int argc, char **argv) {
         }
     }
 
-// ----------------------
-// --- SDL Initialization
-// ----------------------
+// -----------------------------------------
+// --- SDL Initialization and Rendering Loop
+// -----------------------------------------
 
     // SDL Initalizations
     SDL_Init(SDL_INIT_VIDEO);
@@ -202,10 +207,8 @@ int main(int argc, char **argv) {
     // Loop variables
     SDL_Event event;
     int isQuitTrue = 0;
-
-    //int points_count = sizeof(points) / sizeof(struct point3d);
     bool right_click = false;
-
+    
     // Main loop
     while (!isQuitTrue) {
 
@@ -263,9 +266,9 @@ int main(int argc, char **argv) {
         // Set draw color to white for pixels
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         
-        // Rotate points constantly
-        //Rotate_Points_X_Axis(points, points_count, 0.001);
-        //Rotate_Points_Y_Axis(points, points_count, 0.001);
+        // Move camera
+        Move_Camera();
+        printf("Camera pos: %f, %f, %f\n", cam.x, cam.y, cam.z);
 
         SDL_FPoint SDL_Points[points_count];
         // Make array for SDL style points
@@ -363,5 +366,34 @@ void Draw_Face(SDL_Renderer *renderer, struct face vertices) {
     SDL_RenderLine(renderer, vertices.point1.x, vertices.point1.y, vertices.point2.x, vertices.point2.y);
     SDL_RenderLine(renderer, vertices.point2.x, vertices.point2.y, vertices.point3.x, vertices.point3.y);
     SDL_RenderLine(renderer, vertices.point3.x, vertices.point3.y, vertices.point1.x, vertices.point1.y);
+
+}
+
+void Move_Camera() {
+    const bool *state = SDL_GetKeyboardState(NULL);
+
+    if (state[SDL_SCANCODE_W]) {
+        cam.z -= 0.01f;
+    }
+
+    if (state[SDL_SCANCODE_S]) {
+        cam.z += 0.01f;
+    }
+
+    if (state[SDL_SCANCODE_A]) {
+        cam.x -= 0.01f;
+    }
+
+    if (state[SDL_SCANCODE_D]) {
+        cam.x += 0.01f;
+    }
+
+    if (state[SDL_SCANCODE_SPACE]) {
+        cam.y += 0.01f; 
+    }
+
+    if (state[SDL_SCANCODE_LCTRL]) {
+        cam.y -= 0.01f;
+    }
 
 }
